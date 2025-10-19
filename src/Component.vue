@@ -150,7 +150,7 @@ onBeforeUnmount(() => {
             <Button
                 size="sm"
                 :variant="tiptap.isActive('underline') ? 'default' : 'secondary'"
-                :disabled="!tiptap.can().chain().focus().toggleUnderline().run()"
+                :disabled="!tiptap.can().chain().focus().toggleBlockquote().run()"
                 @click="tiptap.chain().focus().toggleUnderline().run()"
             >
               <span class="underline">U</span>
@@ -203,7 +203,7 @@ onBeforeUnmount(() => {
             <Button
                 size="sm"
                 :variant="tiptap.isActive('orderedList') ? 'default' : 'secondary'"
-                @click="tiptap.chain().focus().toggleOrderedList().run()"
+                @click="tiptap.chain().focus().toggleLink().run()"
             >
               List
             </Button>
