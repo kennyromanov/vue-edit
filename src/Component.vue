@@ -1,8 +1,8 @@
 <script setup lang="ts">
 
-import { onMounted, onBeforeUnmount, ref, computed, watch, HTMLAttributes } from 'vue';
+import { defineComponent, h, onMounted, onBeforeUnmount, ref, computed, watch, HTMLAttributes } from 'vue';
 import { cn } from '@/shadcn/lib/utils';
-import { Editor, EditorContent } from '@tiptap/vue-3';
+import { Editor as Tiptap, EditorContent as TiptapContent } from '@tiptap/vue-3';
 import { Color, TextStyle } from '@tiptap/extension-text-style';
 import { ListItem } from '@tiptap/extension-list';
 import { Button } from '@/shadcn/components/ui/button';
@@ -65,13 +65,28 @@ const emit = defineEmits<{
 
 // Defining the variables
 
-const tiptap = ref<Editor | null>(null);
+const tiptap = ref<Tiptap | null>(null);
 
 
 // Defining the functions
 
 // @ts-ignore
 const set = (_val: string|null): void => tiptap.value?.commands.setContent(_val ?? '', false);
+
+
+// Defining the components
+
+const EditorComponent = defineComponent({
+  name: 'EditorComponent',
+
+  setup() {
+    return () => tiptap.value ? h(TiptapContent, {
+      class: 'vue_edit_inner',
+      // @ts-ignore
+      editor: tiptap.value,
+    }) : null;
+  },
+});
 
 
 // Defining the computed
@@ -105,7 +120,7 @@ watch(defaultText, (_val: string) => {
 // Defining the hooks
 
 onMounted(() => {
-  tiptap.value = new Editor({
+  tiptap.value = new Tiptap({
     extensions: [
       Color.configure({ types: [ TextStyle.name, ListItem.name ] }),
       // @ts-ignore
@@ -125,9 +140,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div v-if="tiptap" :class="cn('vue_edit flex flex-col gap-10', props.class)">
-    <slot name="controls" :tiptap="tiptap">
-      <div class="vue_edit_controls">
-        <div class="vue_edit_control_group flex flex-wrap gap-6">
+    <slot :EditorComponent="EditorComponent" :tiptap="tiptap">
+      <slot name="controls" :tiptap="tiptap">
+        <div class="vue_edit_controls flex flex-wrap gap-6">
           <div class="vue_edit_control flex gap-1" aria-label="Text formatting">
             <Button
                 size="sm"
@@ -245,15 +260,15 @@ onBeforeUnmount(() => {
             </Button>
           </div>
         </div>
-      </div>
-    </slot>
+      </slot>
 
-    <slot :tiptap="tiptap">
-      <EditorContent class="vue_edit_inner" :editor="tiptap as any" />
+      <slot name="editor" :EditorComponent="EditorComponent">
+        <EditorComponent />
+      </slot>
     </slot>
   </div>
 
-  <slot v-else name="noContent">
+  <slot v-else name="noContent" :EditorComponent="EditorComponent">
     No Content
   </slot>
 </template>
