@@ -144,11 +144,6 @@ onMounted(() => {
       const json = editor.getJSON();
 
 
-      // Doing some checks
-
-      if (html === val.value) return;
-
-
       // Updating the data
 
       emit('compile', json);
