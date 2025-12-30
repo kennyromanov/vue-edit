@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { defineComponent, onMounted, onBeforeUnmount, h, ref, computed, watch, HTMLAttributes } from 'vue';
+import { defineComponent, onMounted, onUpdated, onBeforeUnmount, h, ref, computed, watch, HTMLAttributes } from 'vue';
 import { cn } from '@/shadcn/lib/utils';
 import { Editor as Tiptap, EditorContent as TiptapContent } from '@tiptap/vue-3';
 import { Color, TextStyle } from '@tiptap/extension-text-style';
@@ -63,9 +63,9 @@ const props = defineProps<{
 // Defining the emits
 
 const emit = defineEmits<{
+  (e: 'compile', val: Obj | null): void,
   (e: 'input', val: string|null): void,
   (e: 'change', val: string|null): void,
-  (e: 'compile', val: Obj | null): void,
   (e: 'update:modelValue', val: string|null): void,
 }>();
 
@@ -79,7 +79,15 @@ const tiptap = ref<any>(null);
 // Defining the functions
 
 // @ts-ignore
-const set = (_val: Obj | string | null): void => tiptap.value?.commands.setContent(_val ?? '', false);
+const set = (val: Obj | string | null): void => tiptap.value?.commands.setContent(val ?? '', false);
+
+const upd = (): void => {
+  const html = props.modelValue ?? props.text ?? defaultText.value;
+
+  if (tiptap.value?.getHTML() === html) return;
+
+  set(html);
+};
 
 
 // Defining the components
@@ -98,17 +106,6 @@ const EditorComponent = defineComponent({
 
 // Defining the computed
 
-const val = computed<string|null>({
-  get(): string|null {
-    return props.modelValue ?? props.text ?? null;
-  },
-  set(val: string|null): void {
-    emit('input', val);
-    emit('change', val);
-    emit('update:modelValue', val);
-  },
-});
-
 const defaultText = computed<string>(() => {
   return props.noDefault ? '' : DEFAULT_TEXT;
 });
@@ -116,12 +113,8 @@ const defaultText = computed<string>(() => {
 
 // Defining the watchers
 
-watch(val, (_val: string|null) => {
-  set(_val ?? '');
-}, { immediate: true });
-
-watch(defaultText, (_val: string) => {
-  set(val.value ?? props.text ?? _val);
+watch(defaultText, () => {
+  upd();
 });
 
 
@@ -137,7 +130,7 @@ onMounted(() => {
       StarterKit,
     ],
 
-    content: val.value ?? props.text ?? defaultText.value,
+    content: props.modelValue ?? props.text ?? defaultText.value,
 
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
@@ -147,10 +140,15 @@ onMounted(() => {
       // Updating the data
 
       emit('compile', json);
-
-      val.value = html;
+      emit('input', html);
+      emit('change', html);
+      emit('update:modelValue', html);
     },
   });
+});
+
+onUpdated(() => {
+  upd();
 });
 
 onBeforeUnmount(() => {
@@ -161,7 +159,7 @@ onBeforeUnmount(() => {
 // Defining the expose
 
 defineExpose({
-  set: (_val: Obj | string | null): void => set(_val),
+  set: (val: Obj | string | null): void => set(val),
 });
 
 </script>
