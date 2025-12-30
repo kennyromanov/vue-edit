@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { defineComponent, h, onMounted, onBeforeUnmount, ref, computed, watch, HTMLAttributes } from 'vue';
+import { defineComponent, onMounted, onBeforeUnmount, h, ref, computed, watch, HTMLAttributes } from 'vue';
 import { cn } from '@/shadcn/lib/utils';
 import { Editor as Tiptap, EditorContent as TiptapContent } from '@tiptap/vue-3';
 import { Color, TextStyle } from '@tiptap/extension-text-style';
@@ -8,6 +8,11 @@ import { ListItem } from '@tiptap/extension-list';
 import { Button } from '@/shadcn/components/ui/button';
 import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
+
+
+// Types
+
+type Obj<T extends any = any> = Record<string, T>;
 
 
 // Constants
@@ -60,6 +65,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'input', val: string|null): void,
   (e: 'change', val: string|null): void,
+  (e: 'compile', val: Obj | null): void,
   (e: 'update:modelValue', val: string|null): void,
 }>();
 
@@ -73,7 +79,7 @@ const tiptap = ref<any>(null);
 // Defining the functions
 
 // @ts-ignore
-const set = (_val: string|null): void => tiptap.value?.commands.setContent(_val ?? '', false);
+const set = (_val: Obj | string | null): void => tiptap.value?.commands.setContent(_val ?? '', false);
 
 
 // Defining the components
@@ -84,7 +90,6 @@ const EditorComponent = defineComponent({
   setup() {
     return () => tiptap.value ? h(TiptapContent, {
       class: 'vue_edit_inner',
-      // @ts-ignore
       editor: tiptap.value,
     }) : null;
   },
@@ -131,12 +136,37 @@ onMounted(() => {
       Underline,
       StarterKit,
     ],
+
     content: val.value ?? props.text ?? defaultText.value,
+
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      const json = editor.getJSON();
+
+
+      // Doing some checks
+
+      if (html === val.value) return;
+
+
+      // Updating the data
+
+      emit('compile', json);
+
+      val.value = html;
+    },
   });
 });
 
 onBeforeUnmount(() => {
   tiptap.value?.destroy();
+});
+
+
+// Defining the expose
+
+defineExpose({
+  set: (_val: Obj | string | null): void => set(_val),
 });
 
 </script>
