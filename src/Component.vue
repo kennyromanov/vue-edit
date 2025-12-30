@@ -58,6 +58,7 @@ const props = defineProps<{
 // Defining the emits
 
 const emit = defineEmits<{
+  (e: 'input', val: string|null): void,
   (e: 'change', val: string|null): void,
   (e: 'update:modelValue', val: string|null): void,
 }>();
@@ -65,7 +66,8 @@ const emit = defineEmits<{
 
 // Defining the variables
 
-const tiptap = ref<Tiptap | null>(null);
+// NOTE: kr: TipTap types are extremely large, use any here to keep declaration emit manageable
+const tiptap = ref<any>(null);
 
 
 // Defining the functions
@@ -96,6 +98,7 @@ const val = computed<string|null>({
     return props.modelValue ?? props.text ?? null;
   },
   set(val: string|null): void {
+    emit('input', val);
     emit('change', val);
     emit('update:modelValue', val);
   },
