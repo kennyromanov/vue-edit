@@ -6,6 +6,7 @@ import { Editor as Tiptap, EditorContent as TiptapContent } from '@tiptap/vue-3'
 import { Color, TextStyle } from '@tiptap/extension-text-style';
 import { ListItem } from '@tiptap/extension-list';
 import { Button } from '@/shadcn/components/ui/button';
+import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
 
@@ -53,6 +54,7 @@ display: none;
 
 const props = defineProps<{
   class?: HTMLAttributes['class'] | null,
+  hint?: string|null,
   text?: string|null,
   modelValue?: string|null,
 
@@ -123,6 +125,7 @@ watch(defaultText, () => {
 onMounted(() => {
   tiptap.value = new Tiptap({
     extensions: [
+      Placeholder.configure({ placeholder: () => props?.hint || '' }),
       Color.configure({ types: [ TextStyle.name, ListItem.name ] }),
       // @ts-ignore
       TextStyle.configure({ types: [ ListItem.name ] }),
@@ -244,7 +247,7 @@ defineExpose({
             <Button
                 size="sm"
                 :variant="tiptap.isActive('orderedList') ? 'default' : 'secondary'"
-                @click="tiptap.chain().focus().toggleLink().run()"
+                @click="tiptap.chain().focus().toggleOrderedList().run()"
             >
               List
             </Button>

@@ -271,6 +271,14 @@
             &:focus {
                 outline: none;
             }
+
+            .is-editor-empty:first-child::before {
+                color: var(--tiptap-gray-5);
+                content: attr(data-placeholder);
+                float: left;
+                height: 0;
+                pointer-events: none;
+            }
         }
 
         ::-webkit-scrollbar {
