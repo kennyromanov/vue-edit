@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { defineComponent, onMounted, onUpdated, onBeforeUnmount, h, ref, computed, watch, HTMLAttributes } from 'vue';
+import { defineComponent, onMounted, onUpdated, onBeforeUnmount, h, ref, computed, HTMLAttributes } from 'vue';
 import { Editor as Tiptap, EditorContent as TiptapContent } from '@tiptap/vue-3';
 import { isset } from '@/lib';
 import { cn } from '@/shadcn/lib/utils';
@@ -10,7 +10,7 @@ import { Button } from '@/shadcn/components/ui/button';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
-import defaultTextStr from './default-text.tpl?raw';
+import defaultText from './default-text.tpl?raw';
 
 
 // Types
@@ -41,7 +41,7 @@ const emit = defineEmits<{
   (e: 'compile', val: Obj | null): void,
   (e: 'input', val: string|null): void,
   (e: 'change', val: string|null): void,
-  (e: 'select', val: Obj<number>): void,
+  (e: 'select', val: Obj): void,
   (e: 'update:position', val: number|null): void,
   (e: 'update:from', val: number|null): void,
   (e: 'update:to', val: number|null): void,
@@ -58,7 +58,7 @@ const tiptap = ref<any>(null);
 // Defining the functions
 
 const updContent = (doFocus?: boolean|null): void => {
-  const html = props.modelValue ?? props.text ?? defaultText.value;
+  const html = props.modelValue ?? props.text ?? _defaultText.value;
 
   if (tiptap.value?.getHTML() === html) return;
 
@@ -66,7 +66,7 @@ const updContent = (doFocus?: boolean|null): void => {
 };
 
 const updSelection = (doFocus?: boolean|null): void => {
-  if (!isset(props.from) && !isset(props.to) && !isset(props.position)) return;
+  if (!isset(props.position) && !isset(props.from) && !isset(props.to)) return;
   select(Number(props.from ?? props.position), Number(props.to ?? props.position), doFocus);
 };
 
@@ -110,15 +110,8 @@ const EditorComponent = defineComponent({
 
 // Defining the computed
 
-const defaultText = computed<string>(() => {
-  return props.noDefault ? '' : defaultTextStr;
-});
-
-
-// Defining the watchers
-
-watch(defaultText, () => {
-  updContent(false);
+const _defaultText = computed<string>(() => {
+  return props.noDefault ? '' : defaultText;
 });
 
 
@@ -135,14 +128,13 @@ onMounted(() => {
       StarterKit,
     ],
 
-    content: props.modelValue ?? props.text ?? defaultText.value,
+    content: props.modelValue ?? props.text ?? _defaultText.value,
 
     onCreate() {
       updSelection(false);
     },
 
     onUpdate({ editor }) {
-      const { from, to } = editor.state.selection;
       const json = editor.getJSON();
       const html = editor.getHTML();
 
@@ -152,10 +144,6 @@ onMounted(() => {
       emit('compile', json);
       emit('input', html);
       emit('change', html);
-      emit('select', { from, to });
-      emit('update:position', to);
-      emit('update:from', from);
-      emit('update:to', to);
       emit('update:modelValue', html);
     },
 
@@ -166,7 +154,7 @@ onMounted(() => {
       // Emitting the values
 
       emit('select', { from, to });
-      emit('update:position', to);
+      emit('update:position', from);
       emit('update:from', from);
       emit('update:to', to);
     }
