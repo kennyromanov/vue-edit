@@ -158,6 +158,18 @@ onMounted(() => {
       emit('update:to', to);
       emit('update:modelValue', html);
     },
+
+    onSelectionUpdate({ editor }) {
+      const { from, to } = editor.state.selection;
+
+
+      // Emitting the values
+
+      emit('select', { from, to });
+      emit('update:position', to);
+      emit('update:from', from);
+      emit('update:to', to);
+    }
   });
 });
 
