@@ -77,7 +77,7 @@ const blur = (): void => { tiptap.value?.commands.blur(); };
 const setContent = (val: Obj | string | null, doFocus?: boolean|null): void => {
   tiptap.value?.commands.setContent(val ?? '', false);
   if (doFocus ?? true) focus();
-}
+};
 
 const select = (from?: number|null, to?: number|null, doFocus?: boolean|null): void => {
 
