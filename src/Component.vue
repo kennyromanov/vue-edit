@@ -41,6 +41,7 @@ const emit = defineEmits<{
   (e: 'compile', val: Obj | null): void,
   (e: 'input', val: string|null): void,
   (e: 'change', val: string|null): void,
+  (e: 'select', val: Obj<number>): void,
   (e: 'update:position', val: number|null): void,
   (e: 'update:from', val: number|null): void,
   (e: 'update:to', val: number|null): void,
@@ -56,12 +57,12 @@ const tiptap = ref<any>(null);
 
 // Defining the functions
 
-const updContent = (): void => {
+const updContent = (doFocus?: boolean|null): void => {
   const html = props.modelValue ?? props.text ?? defaultText.value;
 
   if (tiptap.value?.getHTML() === html) return;
 
-  setContent(html);
+  setContent(html, doFocus);
 };
 
 const updSelection = (doFocus?: boolean|null): void => {
@@ -69,7 +70,14 @@ const updSelection = (doFocus?: boolean|null): void => {
   select(Number(props.from ?? props.position), Number(props.to ?? props.position), doFocus);
 };
 
-const setContent = (val: Obj | string | null): void => tiptap.value?.commands.setContent(val ?? '', false);
+const focus = (): void => { tiptap.value?.commands.focus(); };
+
+const blur = (): void => { tiptap.value?.commands.blur(); };
+
+const setContent = (val: Obj | string | null, doFocus?: boolean|null): void => {
+  tiptap.value?.commands.setContent(val ?? '', false);
+  if (doFocus ?? true) focus();
+}
 
 const select = (from?: number|null, to?: number|null, doFocus?: boolean|null): void => {
 
@@ -80,14 +88,10 @@ const select = (from?: number|null, to?: number|null, doFocus?: boolean|null): v
 
   // Selecting the text
 
-  tiptap.value?.setTextSelection({ from, to });
+  tiptap.value?.commands.setTextSelection({ from, to });
 
-  if (doFocus ?? true) tiptap.value?.focus();
+  if (doFocus ?? true) focus();
 };
-
-const focus = (): void => { tiptap.value?.commands.focus(); };
-
-const blur = (): void => { tiptap.value?.commands.blur(); };
 
 
 // Defining the components
@@ -148,6 +152,7 @@ onMounted(() => {
       emit('compile', json);
       emit('input', html);
       emit('change', html);
+      emit('select', { from, to });
       emit('update:position', to);
       emit('update:from', from);
       emit('update:to', to);
@@ -169,10 +174,10 @@ onBeforeUnmount(() => {
 // Defining the expose
 
 defineExpose({
-  setContent: (val?: Obj | string | null): void => setContent(val),
-  select: (from?: number|null, to?: number|null, doFocus?: boolean|null): void => select(from, to, doFocus),
   focus: (): void => focus(),
   blur: (): void => blur(),
+  setContent: (val?: Obj | string | null): void => setContent(val),
+  select: (from?: number|null, to?: number|null, doFocus?: boolean|null): void => select(from, to, doFocus),
 });
 
 </script>
