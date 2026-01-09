@@ -24,9 +24,9 @@ const props = defineProps<{
   class?: HTMLAttributes['class'] | null,
 
   hint?: string|null,
-  position?: number|null,
-  from?: number|null,
-  to?: number|null,
+  position?: number|string|null,
+  from?: number|string|null,
+  to?: number|string|null,
 
   text?: string|null,
   modelValue?: string|null,
@@ -66,7 +66,7 @@ const updContent = (): void => {
 
 const updSelection = (doFocus?: boolean|null): void => {
   if (!isset(props.from) && !isset(props.to) && !isset(props.position)) return;
-  select(props.from ?? props.position, props.to ?? props.position, doFocus);
+  select(Number(props.from ?? props.position), Number(props.to ?? props.position), doFocus);
 };
 
 const setContent = (val: Obj | string | null): void => tiptap.value?.commands.setContent(val ?? '', false);
@@ -84,6 +84,10 @@ const select = (from?: number|null, to?: number|null, doFocus?: boolean|null): v
 
   if (doFocus ?? true) tiptap.value?.focus();
 };
+
+const focus = (): void => { tiptap.value?.commands.focus(); };
+
+const blur = (): void => { tiptap.value?.commands.blur(); };
 
 
 // Defining the components
@@ -167,6 +171,8 @@ onBeforeUnmount(() => {
 defineExpose({
   setContent: (val?: Obj | string | null): void => setContent(val),
   select: (from?: number|null, to?: number|null, doFocus?: boolean|null): void => select(from, to, doFocus),
+  focus: (): void => focus(),
+  blur: (): void => blur(),
 });
 
 </script>
