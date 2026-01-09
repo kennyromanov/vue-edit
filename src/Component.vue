@@ -1,14 +1,16 @@
 <script setup lang="ts">
 
 import { defineComponent, onMounted, onUpdated, onBeforeUnmount, h, ref, computed, watch, HTMLAttributes } from 'vue';
-import { cn } from '@/shadcn/lib/utils';
 import { Editor as Tiptap, EditorContent as TiptapContent } from '@tiptap/vue-3';
+import { isset } from '@/lib';
+import { cn } from '@/shadcn/lib/utils';
 import { Color, TextStyle } from '@tiptap/extension-text-style';
 import { ListItem } from '@tiptap/extension-list';
 import { Button } from '@/shadcn/components/ui/button';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
+import defaultTextStr from './default-text.tpl?raw';
 
 
 // Types
@@ -16,45 +18,16 @@ import StarterKit from '@tiptap/starter-kit';
 type Obj<T extends any = any> = Record<string, T>;
 
 
-// Constants
-
-const DEFAULT_TEXT = `
-  <h2>
-    Hi there,
-  </h2>
-  <p>
-    this is a <em>basic</em> example of <strong>Tiptap</strong>. Sure, there are all kind of basic text styles you’d probably expect from a text tiptap. But wait until you see the lists:
-  </p>
-  <ul>
-    <li>
-      That’s a bullet list with one …
-    </li>
-    <li>
-      … or two list items.
-    </li>
-  </ul>
-  <p>
-    Isn’t that great? And all of that is editable. But wait, there’s more. Let’s try a code block:
-  </p>
-  <pre><code class="language-css">body {
-display: none;
-}</code></pre>
-  <p>
-    I know, I know, this is impressive. It’s only the tip of the iceberg though. Give it a try and click a little bit around. Don’t forget to check the other examples too.
-  </p>
-  <blockquote>
-    Wow, that’s amazing. Good work, boy! 👏
-    <br />
-    — Mom
-  </blockquote>
-`;
-
-
 // Defining the props
 
 const props = defineProps<{
   class?: HTMLAttributes['class'] | null,
+
   hint?: string|null,
+  position?: number|null,
+  from?: number|null,
+  to?: number|null,
+
   text?: string|null,
   modelValue?: string|null,
 
@@ -68,6 +41,9 @@ const emit = defineEmits<{
   (e: 'compile', val: Obj | null): void,
   (e: 'input', val: string|null): void,
   (e: 'change', val: string|null): void,
+  (e: 'update:position', val: number|null): void,
+  (e: 'update:from', val: number|null): void,
+  (e: 'update:to', val: number|null): void,
   (e: 'update:modelValue', val: string|null): void,
 }>();
 
@@ -80,15 +56,33 @@ const tiptap = ref<any>(null);
 
 // Defining the functions
 
-// @ts-ignore
-const set = (val: Obj | string | null): void => tiptap.value?.commands.setContent(val ?? '', false);
-
-const upd = (): void => {
+const updContent = (): void => {
   const html = props.modelValue ?? props.text ?? defaultText.value;
 
   if (tiptap.value?.getHTML() === html) return;
 
-  set(html);
+  setContent(html);
+};
+
+const updSelection = (doFocus?: boolean|null): void => {
+  if (!isset(props.from) && !isset(props.to) && !isset(props.position)) return;
+  select(props.from ?? props.position, props.to ?? props.position, doFocus);
+};
+
+const setContent = (val: Obj | string | null): void => tiptap.value?.commands.setContent(val ?? '', false);
+
+const select = (from?: number|null, to?: number|null, doFocus?: boolean|null): void => {
+
+  // Doing some checks
+
+  if (!isset(from) && !isset(to)) return;
+
+
+  // Selecting the text
+
+  tiptap.value?.setTextSelection({ from, to });
+
+  if (doFocus ?? true) tiptap.value?.focus();
 };
 
 
@@ -109,14 +103,14 @@ const EditorComponent = defineComponent({
 // Defining the computed
 
 const defaultText = computed<string>(() => {
-  return props.noDefault ? '' : DEFAULT_TEXT;
+  return props.noDefault ? '' : defaultTextStr;
 });
 
 
 // Defining the watchers
 
 watch(defaultText, () => {
-  upd();
+  updContent();
 });
 
 
@@ -135,23 +129,32 @@ onMounted(() => {
 
     content: props.modelValue ?? props.text ?? defaultText.value,
 
-    onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
+    onCreate() {
+      updSelection(false);
+    },
+
+    onUpdate({ editor }) {
+      const { from, to } = editor.state.selection;
       const json = editor.getJSON();
+      const html = editor.getHTML();
 
 
-      // Updating the data
+      // Emitting the values
 
       emit('compile', json);
       emit('input', html);
       emit('change', html);
+      emit('update:position', to);
+      emit('update:from', from);
+      emit('update:to', to);
       emit('update:modelValue', html);
     },
   });
 });
 
 onUpdated(() => {
-  upd();
+  updContent();
+  updSelection(false);
 });
 
 onBeforeUnmount(() => {
@@ -162,7 +165,8 @@ onBeforeUnmount(() => {
 // Defining the expose
 
 defineExpose({
-  set: (val: Obj | string | null): void => set(val),
+  setContent: (val?: Obj | string | null): void => setContent(val),
+  select: (from?: number|null, to?: number|null, doFocus?: boolean|null): void => select(from, to, doFocus),
 });
 
 </script>
