@@ -118,7 +118,7 @@ const defaultText = computed<string>(() => {
 // Defining the watchers
 
 watch(defaultText, () => {
-  updContent();
+  updContent(false);
 });
 
 
@@ -162,7 +162,7 @@ onMounted(() => {
 });
 
 onUpdated(() => {
-  updContent();
+  updContent(false);
   updSelection(false);
 });
 
@@ -176,7 +176,7 @@ onBeforeUnmount(() => {
 defineExpose({
   focus: (): void => focus(),
   blur: (): void => blur(),
-  setContent: (val?: Obj | string | null): void => setContent(val),
+  setContent: (val?: Obj | string | null, doFocus?: boolean|null): void => setContent(val, doFocus),
   select: (from?: number|null, to?: number|null, doFocus?: boolean|null): void => select(from, to, doFocus),
 });
 

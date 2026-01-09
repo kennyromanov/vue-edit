@@ -1,6 +1,6 @@
 {
   "name": "vue-edit",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Text Editor for Vue",
   "keywords": ["editor", "text editor", "vue"],
   "type": "module",
