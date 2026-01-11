@@ -88,6 +88,8 @@ const updSelection = (doFocus?: boolean|null): void => {
 const upd = (): void => {
   const extensions: any[] = props.extensions ?? [];
 
+  clear();
+
   tiptap.value = new Tiptap({
     extensions: [
       Placeholder.configure({ placeholder: () => props?.hint || '' }),
@@ -164,6 +166,11 @@ const select = (from?: number|null, to?: number|null, doFocus?: boolean|null): v
   if (doFocus ?? true) focus();
 };
 
+const clear = (): void => {
+  if (!tiptap.value) return;
+  tiptap.value?.destroy();
+};
+
 
 // Defining the components
 
@@ -224,7 +231,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  tiptap.value?.destroy();
+  clear();
 });
 
 
