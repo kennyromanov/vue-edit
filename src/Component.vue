@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { defineComponent, onMounted, onUpdated, onBeforeUnmount, h, ref, computed, HTMLAttributes } from 'vue';
+import { defineComponent, onMounted, onBeforeUnmount, h, ref, computed, watch, HTMLAttributes } from 'vue';
 import { Editor as Tiptap, EditorContent as TiptapContent } from '@tiptap/vue-3';
 import { isset } from '@/lib';
 import { cn } from '@/shadcn/lib/utils';
@@ -28,6 +28,7 @@ const props = defineProps<{
   from?: number|string|null,
   to?: number|string|null,
 
+  extensions?: Obj[] | null,
   text?: string|null,
   modelValue?: string|null,
 
@@ -53,6 +54,8 @@ const emit = defineEmits<{
 
 // NOTE: kr: TipTap types are extremely large, use any here to keep declaration emit manageable
 const tiptap = ref<any>(null);
+const from = ref<number|null>(null);
+const to = ref<number|null>(null);
 
 
 // Defining the functions
@@ -66,8 +69,76 @@ const updContent = (doFocus?: boolean|null): void => {
 };
 
 const updSelection = (doFocus?: boolean|null): void => {
-  if (!isset(props.position) && !isset(props.from) && !isset(props.to)) return;
-  select(Number(props.from ?? props.position), Number(props.to ?? props.position), doFocus);
+  const _from = props.from ?? from.value ?? props.position ?? null;
+  const _to = props.to ?? to.value ?? _from;
+
+
+  // Doing some checks
+
+  if (!isset(_from) && !isset(_to))
+    return;
+
+  if (tiptap.value?.state.selection.from === _from && tiptap.value?.state.selection.to === _to)
+    return;
+
+
+  select(Number(_from), Number(_to), doFocus);
+};
+
+const upd = (): void => {
+  const extensions: any[] = props.extensions ?? [];
+
+  tiptap.value = new Tiptap({
+    extensions: [
+      Placeholder.configure({ placeholder: () => props?.hint || '' }),
+      Color.configure({ types: [ TextStyle.name, ListItem.name ] }),
+      // @ts-ignore
+      TextStyle.configure({ types: [ ListItem.name ] }),
+      Underline,
+      StarterKit,
+
+      ...extensions,
+    ],
+
+    content: props.modelValue ?? props.text ?? _defaultText.value,
+
+    onCreate() {
+      updContent(false);
+      updSelection(false);
+    },
+
+    onUpdate({ editor }) {
+      const json = editor.getJSON();
+      const html = editor.getHTML();
+
+
+      // Emitting the values
+
+      emit('compile', json);
+      emit('input', html);
+      emit('change', html);
+      emit('update:modelValue', html);
+    },
+
+    onSelectionUpdate({ editor }) {
+      const _from = editor.state.selection.from ?? null;
+      const _to = editor.state.selection.to ?? _from;
+
+
+      // Updating the data
+
+      from.value = _from;
+      to.value = _to;
+
+
+      // Emitting the values
+
+      emit('select', { from: _from, to: _to });
+      emit('update:position', _from);
+      emit('update:from', _from);
+      emit('update:to', _to);
+    },
+  });
 };
 
 const focus = (): void => { tiptap.value?.commands.focus(); };
@@ -115,55 +186,41 @@ const _defaultText = computed<string>(() => {
 });
 
 
+// Defining the watchers
+
+watch(() => props.hint, () => {
+  updContent(false);
+});
+
+watch(() => props.position, () => {
+  updSelection(false);
+});
+
+watch(() => props.from, () => {
+  updSelection(false);
+});
+
+watch(() => props.to, () => {
+  updSelection(false);
+});
+
+watch(() => props.extensions, () => {
+  upd();
+});
+
+watch(() => props.text, () => {
+  updContent(false);
+});
+
+watch(() => props.modelValue, () => {
+  updContent(false);
+});
+
+
 // Defining the hooks
 
 onMounted(() => {
-  tiptap.value = new Tiptap({
-    extensions: [
-      Placeholder.configure({ placeholder: () => props?.hint || '' }),
-      Color.configure({ types: [ TextStyle.name, ListItem.name ] }),
-      // @ts-ignore
-      TextStyle.configure({ types: [ ListItem.name ] }),
-      Underline,
-      StarterKit,
-    ],
-
-    content: props.modelValue ?? props.text ?? _defaultText.value,
-
-    onCreate() {
-      updSelection(false);
-    },
-
-    onUpdate({ editor }) {
-      const json = editor.getJSON();
-      const html = editor.getHTML();
-
-
-      // Emitting the values
-
-      emit('compile', json);
-      emit('input', html);
-      emit('change', html);
-      emit('update:modelValue', html);
-    },
-
-    onSelectionUpdate({ editor }) {
-      const { from, to } = editor.state.selection;
-
-
-      // Emitting the values
-
-      emit('select', { from, to });
-      emit('update:position', from);
-      emit('update:from', from);
-      emit('update:to', to);
-    }
-  });
-});
-
-onUpdated(() => {
-  updContent(false);
-  updSelection(false);
+  upd();
 });
 
 onBeforeUnmount(() => {
